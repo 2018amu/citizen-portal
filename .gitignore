@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# Database / caches
+*.db
+*.sqlite3
+*.log
+
+# Node / frontend build (if you have React or JS build)
+node_modules/
+dist/
+build/
+
+# Chroma vectorstore / cache
+vectorstore/

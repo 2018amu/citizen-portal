@@ -1,0 +1,10 @@
+Flask==2.3.2
+flask-cors==3.0.10
+pymongo[srv]==4.4.1
+dnspython==2.4.2
+python-dotenv==1.0.1
+
+faiss-cpu
+sentence-transformers
+beautifulsoup4
+PyPDF2

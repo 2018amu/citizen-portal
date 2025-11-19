@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Citizen Services Portal</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <aside class="sidebar">
+        <h2>Ministries</h2>
+        <ul id="service-list"></ul>
+        <div class="lang-switch">
+          <button onclick="setLang('en')">English</button>
+          <button onclick="setLang('si')">සංහල</button>
+          <button onclick="setLang('ta')">தமிழ்</button>
+        </div>
+      </aside>
+      <section class="middle">
+        <h2 id="sub-title">Select Subservice</h2>
+        <ul id="sub-list"></ul>
+      </section>
+      <main class="content">
+        <h2 id="q-title">Select Question</h2>
+        <ul id="question-list"></ul>
+        <div id="answer-box"></div>
+      </main>
+    </div>
+    <script src="/static/script.js"></script>
+  </body>
+</html>
