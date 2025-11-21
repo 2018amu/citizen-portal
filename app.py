@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from io import StringIO
+from io import StringIO,BytesIO
 import csv
 from flask import Flask, jsonify, render_template, request, session, redirect, send_file
 from flask_cors import CORS
@@ -18,8 +18,6 @@ import chromadb
 from sklearn.cluster import KMeans
 from openai import OpenAI
 from werkzeug.security import generate_password_hash, check_password_hash
-
-
 
 # --- Set HF cache ---
 os.environ["HF_HOME"] = "D:/huggingface_cache"
@@ -102,7 +100,8 @@ def log_engagement():
     doc = {
         "user_id": payload.get("user_id") or None,
         "age": int(payload.get("age")) if payload.get("age") else None,
-        "job": payload.get("desires") or [],
+        "job": payload.get("job") or [],
+        "desires":payload.get("desires"),
         "question_clicked": payload.get("question_clicked"),
         "service": payload.get("service"),
         "timestamp": datetime.utcnow()
@@ -219,10 +218,13 @@ def admin_engagements():
 @app.route("/api/admin/export_csv")
 @admin_required
 def export_csv():
-    cursor=eng_col.find()
-    si=StringIO()
-    cw=csv.writer(si)
+    cursor = eng_col.find()
+    
+    # Write CSV in text mode
+    si = StringIO()
+    cw = csv.writer(si)
     cw.writerow(["user_id","age","job","desire","question","service","timestamp"])
+    
     for e in cursor:
         cw.writerow([
             e.get("user_id"),
@@ -233,11 +235,21 @@ def export_csv():
             e.get("service"),
             e.get("timestamp").isoformat() if e.get("timestamp") else ""
         ])
-    si.seek(0)
-    return send_file(StringIO(si.read()), mimetype="text/csv", as_attachment=True, download_name="engagements.csv")
+
+    # Convert to bytes for send_file
+    output = BytesIO()
+    output.write(si.getvalue().encode("utf-8"))
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="engagements.csv"
+    )
 
 # --- Admin CRUD services ---
-@app.route("/api/admin/services", methods=["GET","POST"])
+@app.route("/api/admin/services", methods=["GET","POST"],strict_slashes=False)
 @admin_required
 def admin_services():
     if request.method=="GET":
@@ -255,40 +267,79 @@ def delete_service(service_id):
     return jsonify({"status":"deleted"})
 
 # --- AI search endpoint ---
-@app.route("/api/ai/search",methods=["POST"])
+@app.route("/api/ai/search", methods=["POST"])
 @limiter.limit("20/minute")
 def search():
     try:
-        data=request.get_json()
-        query=data.get("query","").strip()
-        if not query: return jsonify({"error":"Query required"}),400
+        data = request.get_json()
+        query = data.get("query", "").strip()
 
+        if not query:
+            return jsonify({"error": "Query required"}), 400
+
+        # --- Embed the query ---
         q_embed = embedder.encode(query)
         q_embed = np.array(q_embed).flatten().tolist()
-        results = collection.query(query_embeddings=[q_embed],n_results=3,include=["metadatas","documents","distances"])
 
-        best_answer="No answer found."
-        best_distance=None
+        # --- Query vector store ---
+        results = collection.query(
+            query_embeddings=[q_embed],
+            n_results=3,
+            include=["metadatas", "documents", "distances"]
+        )
 
-        metadatas=results.get("metadatas",[])
-        distances=results.get("distances",[])
-        documents=results.get("documents",[])
+        print("DEBUG RESULTS FROM CHROMA:", results)   # <--- ADD THIS
 
-        if metadatas and distances and documents:
-            min_idx = np.argmin(distances[0])
-            best_distance = distances[0][min_idx]
-            doc_str = documents[0][min_idx]
-            try:
-                doc_data=json.loads(doc_str)
-                best_answer = doc_data["subservices"][0]["questions"][0]["answer"]["en"]
-            except Exception:
-                pass
+        best_answer = "No answer found."
+        best_distance = None
 
-        return jsonify({"query":query,"answer":best_answer,"distance":best_distance})
+        # --- Extract fields safely ---
+        metadatas = results.get("metadatas", [])
+        documents = results.get("documents", [])
+        distances = results.get("distances", [])
+
+        # --- A helper that guarantees the object is list-of-list ---
+        def safe_list_of_list(x):
+            if isinstance(x, list) and len(x) > 0 and isinstance(x[0], list):
+                return x
+            return [[]]     # return empty structure instead of int
+
+        metadatas = safe_list_of_list(metadatas)
+        documents = safe_list_of_list(documents)
+        distances = safe_list_of_list(distances)
+
+        # --- If nothing found, return safely ---
+        if len(distances[0]) == 0 or len(documents[0]) == 0:
+            return jsonify({
+                "query": query,
+                "answer": best_answer,
+                "distance": None
+            })
+
+        # --- Pick best match ---
+        min_idx = int(np.argmin(distances[0]))
+        best_distance = distances[0][min_idx]
+        doc_str = documents[0][min_idx]
+
+        # --- Parse stored JSON ---
+        try:
+            doc_data = json.loads(doc_str)
+            best_answer = doc_data["subservices"][0]["questions"][0]["answer"]["en"]
+        except Exception:
+            pass
+
+        return jsonify({
+            "query": query,
+            "answer": best_answer,
+            "distance": best_distance
+        })
+
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error":str(e)}),500
+        return jsonify({"error": str(e)}), 500
+
+
 
 # --- Main ---
 if __name__=="__main__":
