@@ -89,20 +89,17 @@
 
     </main>
 
-    <aside class="chat-panel" id="chat-panel">
-      <div class="chat-header">
-        <h3>AI Assistant</h3>
-        <button onclick="closeChat()">×</button>
-      </div>
-      <div class="chat-body" id="chat-body"></div>
-      <div class="chat-input">
-        <input id="chat-text" placeholder="Type your question..." oninput="autosuggest(this.value)" />
+    <div class="chat-wrapper">
+      <h2>Hybrid AI Chat</h2>
+      <div id="chat-container" class="chat-container"></div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-text" placeholder="Type your question here..." />
         <button onclick="sendChat()">Send</button>
       </div>
-      <div id="suggestions" class="suggestions"></div>
-    </aside>
+    </div>
+  
   </div>
 
-  <script src="/static/newscript.js"></script>
+  <script src="/static/finalscript.js"></script>
 </body>
 </html>
