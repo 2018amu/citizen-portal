@@ -1,8 +1,10 @@
+from bson import ObjectId
+from flask import request, jsonify
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file
 from flask_cors import CORS
 from flask_session import Session
 from pymongo import MongoClient
-from bson import ObjectId, Binary
+from bson import ObjectId, Binary, errors as bson_errors
 from datetime import datetime
 import bcrypt
 import os
@@ -13,6 +15,7 @@ import pathlib
 import numpy as np
 import json
 import logging
+
 
 # Optional packages
 try:
@@ -78,6 +81,7 @@ ads_col = db["ads"]
 admins_col = db["admins"]
 eng_col = db["engagements"]
 profiles_col = db["profiles"]
+newusers_col = db["webusers"]
 
 # ---------------- Utilities ----------------
 
@@ -107,6 +111,7 @@ def admin_required(fn):
 
 # ---------------- Embedding model ----------------
 
+
 def get_embedding_model():
     global EMBED_MODEL
     if EMBED_MODEL is None:
@@ -126,6 +131,7 @@ def get_embedding_model():
 # ---------------- OpenAI helper ----------------
 if OPENAI_AVAILABLE and OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
+
 
 def run_ai_simple(query: str):
     try:
@@ -161,6 +167,7 @@ def ask_ai(query):
     except Exception as e:
         logger.exception("OpenAI call failed: %s", e)
         return None
+
 
 def build_faiss_index():
     if not FAISS_AVAILABLE:
@@ -414,6 +421,254 @@ def api_ads():
         return jsonify({"message": "Ad added successfully"}), 201
     docs = list(ads_col.find({}, {"_id": 0}))
     return jsonify(docs)
+
+    # Add to existing users_col schema
+
+
+# @app.route("/api/profile/extended", methods=["POST"])
+# def extended_profile():
+#     payload = request.json or {}
+#     profile_id = payload.get("profile_id")
+
+#     if not profile_id:
+#         return jsonify({"error": "profile_id required"}), 400
+
+#     # Validate ObjectId
+#     try:
+#         profile_obj_id = ObjectId(profile_id)
+#     except bson_errors.InvalidId:
+#         return jsonify({"error": "Invalid profile_id format"}), 400
+
+#     extended_data = {
+#         "family": {
+#             "marital_status": payload.get("marital_status"),
+#             "children": payload.get("children", []),
+#             "children_ages": payload.get("children_ages", []),
+#             "children_education": payload.get("children_education", []),
+#             "dependents": payload.get("dependents", 0)
+#         },
+#         "education": {
+#             "highest_qualification": payload.get("highest_qualification"),
+#             "institution": payload.get("institution"),
+#             "year_graduated": payload.get("year_graduated"),
+#             "field_of_study": payload.get("field_of_study")
+#         },
+#         "career": {
+#             "current_job": payload.get("current_job"),
+#             "years_experience": payload.get("years_experience"),
+#             "skills": payload.get("skills", []),
+#             "career_goals": payload.get("career_goals", [])
+#         },
+#         "interests": {
+#             "hobbies": payload.get("hobbies", []),
+#             "learning_interests": payload.get("learning_interests", []),
+#             "service_preferences": payload.get("service_preferences", [])
+#         },
+#         "consent": {
+#             "marketing_emails": payload.get("marketing_emails", False),
+#             "personalized_ads": payload.get("personalized_ads", False),
+#             "data_analytics": payload.get("data_analytics", False)
+#         }
+#     }
+
+#     try:
+#         result = newusers_col.update_one(
+#             {"_id": profile_obj_id},
+#             {"$set": {"extended_profile": extended_data}}
+#         )
+#         if result.matched_count == 0:
+#             return jsonify({"error": "Profile not found"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+#     return jsonify({"status": "ok"})
+
+@app.route("/api/profile/extended", methods=["POST"])
+def extended_profile():
+    payload = request.json or {}
+    user_id = payload.get("user_id")  # coming from engagements
+
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+
+    try:
+        user_obj_id = ObjectId(user_id)
+    except Exception:
+        return jsonify({"error": "Invalid user_id"}), 400
+
+    # Check if user exists in webusers
+    user = newusers_col.find_one({"_id": user_obj_id})
+    if not user:
+        return jsonify({"error": "User not found in webusers"}), 404
+
+    # Build extended profile
+    extended_data = {
+        "family": {
+            "marital_status": payload.get("marital_status"),
+            "children": payload.get("children", []),
+            "children_ages": payload.get("children_ages", []),
+            "children_education": payload.get("children_education", []),
+            "dependents": payload.get("dependents", 0)
+        },
+        "education": {
+            "highest_qualification": payload.get("highest_qualification"),
+            "institution": payload.get("institution"),
+            "year_graduated": payload.get("year_graduated"),
+            "field_of_study": payload.get("field_of_study")
+        },
+        "career": {
+            "current_job": payload.get("current_job"),
+            "years_experience": payload.get("years_experience"),
+            "skills": payload.get("skills", []),
+            "career_goals": payload.get("career_goals", [])
+        },
+        "interests": {
+            "hobbies": payload.get("hobbies", []),
+            "learning_interests": payload.get("learning_interests", []),
+            "service_preferences": payload.get("service_preferences", [])
+        },
+        "consent": {
+            "marketing_emails": payload.get("marketing_emails", False),
+            "personalized_ads": payload.get("personalized_ads", False),
+            "data_analytics": payload.get("data_analytics", False)
+        }
+    }
+
+    try:
+        newusers_col.update_one(
+            {"_id": user_obj_id},
+            {"$set": {"extended_profile": extended_data, "updated": datetime.utcnow()}}
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"status": "ok"})
+
+# add new user
+@app.route("/api/profile/create", methods=["POST"])
+def create_profile():
+    payload = request.json or {}
+    user_id = payload.get("user_id")
+
+    # Build extended profile structure
+    extended_data = {
+        "family": {
+            "marital_status": payload.get("marital_status"),
+            "children": payload.get("children", []),
+            "children_ages": payload.get("children_ages", []),
+            "children_education": payload.get("children_education", []),
+            "dependents": payload.get("dependents", 0)
+        },
+        "education": {
+            "highest_qualification": payload.get("highest_qualification"),
+            "institution": payload.get("institution"),
+            "year_graduated": payload.get("year_graduated"),
+            "field_of_study": payload.get("field_of_study")
+        },
+        "career": {
+            "current_job": payload.get("current_job"),
+            "years_experience": payload.get("years_experience"),
+            "skills": payload.get("skills", []),
+            "career_goals": payload.get("career_goals", [])
+        },
+        "interests": {
+            "hobbies": payload.get("hobbies", []),
+            "learning_interests": payload.get("learning_interests", []),
+            "service_preferences": payload.get("service_preferences", [])
+        },
+        "consent": {
+            "marketing_emails": payload.get("marketing_emails", False),
+            "personalized_ads": payload.get("personalized_ads", False),
+            "data_analytics": payload.get("data_analytics", False)
+        }
+    }
+
+    # If user_id exists, try to update; else create new
+    user_obj_id = None
+    if user_id:
+        try:
+            user_obj_id = ObjectId(user_id)
+            user = newusers_col.find_one({"_id": user_obj_id})
+            if user:
+                newusers_col.update_one(
+                    {"_id": user_obj_id},
+                    {"$set": {"extended_profile": extended_data, "updated": datetime.utcnow()}}
+                )
+                return jsonify({"status": "ok", "user_id": str(user_obj_id)})
+        except Exception:
+            pass  # invalid user_id will fall through to creation
+
+    # Create new user
+    new_doc = {
+        "name": payload.get("name"),
+        "age": payload.get("age"),
+        "email": payload.get("email"),
+        "job": payload.get("job"),
+        "extended_profile": extended_data,
+        "created": datetime.utcnow(),
+        "updated": datetime.utcnow()
+    }
+    result = newusers_col.insert_one(new_doc)
+    return jsonify({"status": "ok", "user_id": str(result.inserted_id)})
+
+
+
+
+# Enhanced engagement logging
+
+
+@app.route("/api/engagement/enhanced", methods=["POST"])
+def log_enhanced_engagement():
+    payload = request.json or {}
+
+    # Extract behavioral data
+    user_agent = request.headers.get("User-Agent", "")
+    ip_address = request.remote_addr
+    referrer = request.headers.get("Referer", "")
+
+    try:
+        doc = {
+            "user_id": payload.get("user_id"),
+            "session_id": payload.get("session_id"),
+
+            "age": int(payload.get("age")) if payload.get("age") else None,
+            "job": payload.get("job"),
+            "desires": payload.get("desires", []),
+            "question_clicked": payload.get("question_clicked"),
+            "service": payload.get("service"),
+            "ad": payload.get("ad"),
+            "source": payload.get("source"),
+
+            # User behavior tracking
+            "time_spent": payload.get("time_spent"),
+            "scroll_depth": payload.get("scroll_depth"),
+            "clicks": payload.get("clicks", []),
+            "searches": payload.get("searches", []),
+
+            # Device info
+            "device_info": {
+                "user_agent": user_agent,
+                "ip_address": ip_address,
+                "screen_resolution": payload.get("screen_resolution")
+            },
+
+            # Referral tracking
+            "referral_data": {
+                "referrer": referrer,
+                "utm_source": payload.get("utm_source"),
+                "utm_medium": payload.get("utm_medium"),
+                "utm_campaign": payload.get("utm_campaign")
+            },
+
+            "timestamp": datetime.utcnow()
+        }
+
+        eng_col.insert_one(doc)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"status": "ok"})
 
 # ---------------- Engagement CSV ----------------
 

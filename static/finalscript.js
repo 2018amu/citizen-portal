@@ -108,6 +108,77 @@ async function loadMinistriesInCategory(cat) {
   }
 }
 
+function strToList(val) {
+  if (!val) return [];
+  return val.split(",").map(x => x.trim()).filter(Boolean);
+}
+
+function saveExtendedProfile() {
+  const userIdInput = document.getElementById("profile_id");
+  const user_id = userIdInput ? userIdInput.value : localStorage.getItem("user_id");
+
+  const payload = {
+    user_id, // optional; if exists, updates user, else creates new
+
+    name: document.getElementById("name")?.value || "",
+    age: parseInt(document.getElementById("age")?.value) || null,
+    email: document.getElementById("email")?.value || "",
+    job: document.getElementById("current_job")?.value || "",
+
+    // Family
+    marital_status: document.getElementById("marital_status")?.value || "",
+    children: (document.getElementById("children")?.value || "").split(",").map(s => s.trim()).filter(Boolean),
+    children_ages: (document.getElementById("children_ages")?.value || "").split(",").map(s => s.trim()).filter(Boolean),
+    children_education: (document.getElementById("children_education")?.value || "").split(",").map(s => s.trim()).filter(Boolean),
+    dependents: parseInt(document.getElementById("dependents")?.value) || 0,
+
+    // Education
+    highest_qualification: document.getElementById("highest_qualification")?.value || "",
+    institution: document.getElementById("institution")?.value || "",
+    year_graduated: document.getElementById("year_graduated")?.value || "",
+    field_of_study: document.getElementById("field_of_study")?.value || "",
+
+    // Career
+    current_job: document.getElementById("current_job")?.value || "",
+    years_experience: parseInt(document.getElementById("years_experience")?.value) || 0,
+    skills: (document.getElementById("skills")?.value || "").split(",").map(s => s.trim()).filter(Boolean),
+    career_goals: (document.getElementById("career_goals")?.value || "").split(",").map(s => s.trim()).filter(Boolean),
+
+    // Interests
+    hobbies: (document.getElementById("hobbies")?.value || "").split(",").map(s => s.trim()).filter(Boolean),
+    learning_interests: (document.getElementById("learning_interests")?.value || "").split(",").map(s => s.trim()).filter(Boolean),
+    service_preferences: (document.getElementById("service_preferences")?.value || "").split(",").map(s => s.trim()).filter(Boolean),
+
+    // Consent
+    marketing_emails: document.getElementById("marketing_emails")?.checked || false,
+    personalized_ads: document.getElementById("personalized_ads")?.checked || false,
+    data_analytics: document.getElementById("data_analytics")?.checked || false
+  };
+
+  fetch("/api/profile/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "ok" && data.user_id) {
+      alert("Profile saved successfully!");
+      localStorage.setItem("user_id", data.user_id);
+      if (userIdInput) userIdInput.value = data.user_id; // update input field
+    } else {
+      alert("Error: " + (data.error || "Unknown error"));
+    }
+  })
+  .catch(err => {
+    console.error("Failed to save profile:", err);
+    alert("An unexpected error occurred.");
+  });
+}
+
+
+
+
 // -----------------------------
 // LOAD QUESTIONS
 // -----------------------------
@@ -400,3 +471,8 @@ window.onclick = function (event) {
     modal.style.display = "none";
   }
 };
+window.addEventListener("load", () => {
+  const modal = document.querySelector(".modal");
+  if(modal) modal.style.display = "flex"; // show modal
+});
+
