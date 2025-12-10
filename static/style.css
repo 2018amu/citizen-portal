@@ -1,127 +1,136 @@
+/* Global */
+
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f4f4f9;
-  }
-  
-  .container {
-    display: flex;
-    min-height: 100vh;
-  }
-  
-  /* Sidebar */
-  .sidebar {
-    width: 280px;
-    background: #2f3e46;
-    color: #fff;
-    padding: 20px;
-    flex-shrink: 0;
-  }
-  
-  .sidebar h2 {
-    margin-top: 0;
-    margin-bottom: 15px;
-  }
-  
-  #service-search {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-    border: none;
-  }
-  
-  #service-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-  
-  #service-list li {
-    padding: 10px;
-    margin-bottom: 5px;
-    background: #354f52;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  
-  #service-list li:hover {
-    background: #52796f;
-  }
-  
-  /* Language switch buttons */
-  .lang-switch button {
-    margin: 5px 2px 0 0;
-    padding: 6px 10px;
-    background: #84a98c;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    color: #fff;
-    font-weight: bold;
-  }
-  
-  .lang-switch button:hover {
-    background: #52796f;
-  }
-  
-  /* Middle Section */
-  .middle {
-    flex: 1;
-    padding: 20px;
-    background: #cad2c5;
-  }
-  
-  .middle h2 {
-    margin-top: 0;
-  }
-  
-  #sub-list li {
-    padding: 8px;
-    margin-bottom: 5px;
-    background: #84a98c;
-    border-radius: 4px;
-    cursor: pointer;
-    list-style: none;
-  }
-  
-  #sub-list li:hover {
-    background: #52796f;
-    color: #fff;
-  }
-  
-  /* Content Section */
-  .content {
-    flex: 2;
-    padding: 20px;
-    background: #edf6f9;
-  }
-  
-  #question-list li {
-    padding: 8px;
-    margin-bottom: 5px;
-    background: #8ecae6;
-    border-radius: 4px;
-    cursor: pointer;
-    list-style: none;
-  }
-  
-  #question-list li:hover {
-    background: #219ebc;
-    color: #fff;
-  }
-  
-  #answer-box {
-    margin-top: 15px;
-    padding: 15px;
-    background: #ffddd2;
-    border-radius: 6px;
-  }
-  
-  h2, h3 {
-    color: #333;
-  }
-  
+  margin: 0;
+  background: #f4f6f9;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #333;
+}
+
+.container {
+  padding: 24px;
+  max-width: 1350px;
+  margin: auto;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* Cards */
+
+.card {
+  background: #fff;
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+.login-card {
+  max-width: 420px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.login-card h2 {
+  margin-bottom: 16px;
+}
+
+/* Form */
+
+#login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#login-form input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+/* Buttons */
+
+.btn-primary {
+  padding: 10px 18px;
+  background: #007bff;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.btn-danger {
+  padding: 10px 18px;
+  background: #e74c3c;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.btn-primary:hover, .btn-danger:hover {
+  opacity: 0.9;
+}
+
+/* Dashboard */
+
+.top-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  margin: 20px 0 10px 0;
+  color: #2c3e50;
+}
+
+/* Charts */
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.chart-card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.07);
+}
+
+/* Table */
+
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 15px;
+}
+
+.styled-table th {
+  background: #34495e;
+  color: white;
+  padding: 10px;
+}
+
+.styled-table td {
+  padding: 10px;
+  background: #fdfdfd;
+  border-bottom: 1px solid #ccc;
+}
+
+.styled-table tr:hover td {
+  background: #f0f6ff;
+}
