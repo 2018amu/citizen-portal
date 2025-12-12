@@ -13,6 +13,18 @@ body {
     margin: auto;
     padding: 20px;
 }
+.price-filter {
+    margin: 15px 0;
+}
+.price-display {
+    font-weight: bold;
+    margin-top: 5px;
+}
+#price-range {
+    width: 100%;
+    margin-top: 5px;
+}
+
 
 /* ===============================
    Header

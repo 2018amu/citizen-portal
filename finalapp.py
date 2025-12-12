@@ -88,31 +88,61 @@ orders_col=["orders"]
 payments_col=["payments"]
 
 # ///api/store/products
+
+
+import re
+
 @app.route("/api/store/products")
 def get_products():
- category = request.args.get("category")
- subcategory = request.args.get("subcategory")
- tags = request.args.get("tags", "").split(",") if request.args.get("tags") else []
- min_price = request.args.get("min_price", type=float)
- max_price = request.args.get("max_price", type=float)
+    category = request.args.get("category")      # e.g., "fashion,clothing"
+    delivery = request.args.get("delivery")      # e.g., "pickup,delivery"
+    tags = request.args.get("tags", "")          # e.g., "new,sale"
+    min_price = request.args.get("min_price", type=float)
+    max_price = request.args.get("max_price", type=float)
 
- query = {"in_stock": True}
+    query = {"in_stock": True}
 
- if category:
-   query["category"] = category
- if subcategory:
-   query["subcategory"] = subcategory
- if tags and tags[0]:
-   query["tags"] = {"$in": tags}
- if min_price is not None or max_price is not None:
-     query["price"] = {}
- if min_price is not None:
-    query["price"]["$gte"] = min_price
- if max_price is not None:
-    query["price"]["$lte"] = max_price
+    # --- Categories (case-insensitive)
+    if category:
+        categories = [c.strip() for c in category.split(",") if c.strip()]
+        if categories:
+            query["category"] = {"$in": [re.compile(f"^{c}$", re.IGNORECASE) for c in categories]}
 
- products = list(products_col.find(query, {"_id": 0}).limit(50))
- return jsonify(products)
+    # --- Delivery (case-insensitive)
+    if delivery:
+        deliveries = [d.strip() for d in delivery.split(",") if d.strip()]
+        if deliveries:
+            query["delivery"] = {"$in": [re.compile(f"^{d}$", re.IGNORECASE) for d in deliveries]}
+
+    # --- Tags (case-insensitive)
+    if tags:
+        tags_list = [t.strip() for t in tags.split(",") if t.strip()]
+        if tags_list:
+            query["tags"] = {"$in": [re.compile(f"^{t}$", re.IGNORECASE) for t in tags_list]}
+
+    # --- Price filter
+    if min_price is not None or max_price is not None:
+        query["price"] = {}
+        if min_price is not None:
+            query["price"]["$gte"] = min_price
+        if max_price is not None:
+            query["price"]["$lte"] = max_price
+
+    # Fetch products from MongoDB
+    products = list(products_col.find(
+        query,
+        {"_id": 1, "name": 1, "price": 1, "original_price": 1, "images": 1, "category": 1, "delivery": 1}
+    ).limit(50))
+
+    # Convert _id to string
+    for p in products:
+        p["_id"] = str(p["_id"])
+
+    return jsonify(products)
+
+
+
+
 
 # /api/store/categories
 @app.route("/api/store/categories")
