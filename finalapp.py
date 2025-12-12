@@ -6,6 +6,7 @@ from flask_session import Session
 from pymongo import MongoClient
 from bson import ObjectId, Binary, errors as bson_errors
 from datetime import datetime
+from recommendation_engine import RecommendationEngine
 import bcrypt
 import os
 from functools import wraps
@@ -82,6 +83,133 @@ admins_col = db["admins"]
 eng_col = db["engagements"]
 profiles_col = db["profiles"]
 newusers_col = db["webusers"]
+products_col=db["products"]
+orders_col=["orders"]
+payments_col=["payments"]
+
+# ///api/store/products
+@app.route("/api/store/products")
+def get_products():
+ category = request.args.get("category")
+ subcategory = request.args.get("subcategory")
+ tags = request.args.get("tags", "").split(",") if request.args.get("tags") else []
+ min_price = request.args.get("min_price", type=float)
+ max_price = request.args.get("max_price", type=float)
+
+ query = {"in_stock": True}
+
+ if category:
+   query["category"] = category
+ if subcategory:
+   query["subcategory"] = subcategory
+ if tags and tags[0]:
+   query["tags"] = {"$in": tags}
+ if min_price is not None or max_price is not None:
+     query["price"] = {}
+ if min_price is not None:
+    query["price"]["$gte"] = min_price
+ if max_price is not None:
+    query["price"]["$lte"] = max_price
+
+ products = list(products_col.find(query, {"_id": 0}).limit(50))
+ return jsonify(products)
+
+# /api/store/categories
+@app.route("/api/store/categories")
+def get_store_categories():
+ categories = products_col.distinct("category")
+ subcategories = {}
+ for cat in categories:
+    subcategories[cat] = products_col.distinct("subcategory", {"category": cat})
+
+ return jsonify({
+ "categories": categories,
+ "subcategories": subcategories
+ })
+
+# //api/store/order
+@app.route("/api/store/order", methods=["POST"])
+def create_order():
+    payload = request.json or {}
+
+    order = {
+        "order_id": f"ORD{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+        "user_id": payload.get("user_id"),
+        "items": payload.get("items", []),
+        "total_amount": payload.get("total_amount", 0),
+        "status": "pending",
+        "shipping_address": payload.get("shipping_address", {}),
+        "payment_method": payload.get("payment_method"),
+        "created": datetime.utcnow(),
+        "updated": datetime.utcnow()
+    }
+
+    result = orders_col.insert_one(order)
+    return jsonify({"status": "ok", "order_id": order["order_id"]})
+# /api/store/payment
+@app.route("/api/store/payment", methods=["POST"])
+def process_payment():
+ payload = request.json or {}
+
+ payment = {
+ "payment_id": f"PAY{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+ "order_id": payload.get("order_id"),
+ "user_id": payload.get("user_id"),
+ "amount": payload.get("amount", 0),
+ "currency": payload.get("currency", "LKR"),
+ "method": payload.get("method"),
+ "status": "completed",
+ "transaction_id": payload.get("transaction_id"),
+ "created": datetime.utcnow()
+ }
+
+ # Update order status
+ orders_col.update_one(
+ {"order_id": payload.get("order_id")},
+ {"$set": {"status": "paid", "updated": datetime.utcnow()}}
+ )
+
+ payments_col.insert_one(payment)
+
+ # Log engagement for recommendation system
+ eng_col.insert_one({
+ "user_id": payload.get("user_id"),
+ "type": "purchase",
+ "product_ids": [item.get("product_id") for item in payload.get("items", [])],
+ "amount": payload.get("amount", 0),
+ "timestamp": datetime.utcnow()
+ })
+ return jsonify({"status": "ok", "payment_id": payment["payment_id"]})
+
+
+recommendation_engine = RecommendationEngine()
+
+@app.route("/recommendations")
+def recommendations_page():
+    return render_template("recommendations.html")
+
+@app.route("/store")
+def store():
+    return render_template("store.html")
+
+
+
+@app.route("/api/recommendations/<user_id>")
+def get_recommendations(user_id):
+    try:
+        ads = recommendation_engine.get_personalized_ads(user_id)
+        edu_recommendations = recommendation_engine.generate_education_recommendations(user_id)
+
+        return jsonify({
+            "ads": ads,
+            "education_recommendations": edu_recommendations,
+            "user_segment": recommendation_engine.get_user_segment(user_id)
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 # ---------------- Utilities ----------------
 

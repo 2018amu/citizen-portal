@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>User Recommendations</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            margin: auto;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .section-title {
+            margin-top: 25px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .box {
+            background: #fafafa;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            margin-top: 8px;
+        }
+
+        .box p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h2>AI Recommendations</h2>
+
+    <input type="text" id="user_id" placeholder="Enter User ID">
+
+    <button onclick="loadRecommendations()">Get Recommendations</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+async function loadRecommendations() {
+    const userId = document.getElementById("user_id").value.trim();
+    const resultBox = document.getElementById("result");
+
+    if (!userId) {
+        resultBox.innerHTML = "<p style='color:red;'>Enter User ID!</p>";
+        return;
+    }
+
+    resultBox.innerHTML = "<p>Loading...</p>";
+
+    try {
+        const res = await fetch(`/api/recommendations/${userId}`);
+        const data = await res.json();
+
+        if (data.error) {
+            resultBox.innerHTML = `<p style="color:red;">${data.error}</p>`;
+            return;
+        }
+
+        // Display User Segment
+        const userSegment = data.user_segment && data.user_segment.length
+            ? data.user_segment.join(", ")
+            : "No segment data";
+
+        // Display Personalized Ads
+        const adsHtml = data.ads && data.ads.length
+            ? data.ads.map(a => `<p>• <strong>${a.title || a.type}</strong>: ${a.message || ""}</p>`).join("")
+            : "<p>No ads available</p>";
+
+        // Display Education Recommendations
+        const eduHtml = data.education_recommendations && data.education_recommendations.length
+            ? data.education_recommendations.map(e => `<p>• <strong>${e.title || e.type}</strong>: ${e.message || ""}</p>`).join("")
+            : "<p>No recommendations available</p>";
+
+        resultBox.innerHTML = `
+            <div class="section-title">User Segment</div>
+            <div class="box">${userSegment}</div>
+
+            <div class="section-title">Personalized Ads</div>
+            <div class="box">${adsHtml}</div>
+
+            <div class="section-title">Education Recommendations</div>
+            <div class="box">${eduHtml}</div>
+        `;
+
+    } catch (e) {
+        console.error(e);
+        resultBox.innerHTML = "<p style='color:red;'>Failed to load recommendations</p>";
+    }
+}
+</script>
+</body>
+</html>
