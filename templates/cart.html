@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Your Cart</title>
+
+<style>
+:root {
+    --primary: #0d6efd;
+    --success: #198754;
+    --danger: #dc3545;
+    --gray: #6c757d;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: "Inter", "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #f4f6f8, #eef1f5);
+}
+
+/* ---------- Layout ---------- */
+.cart-wrapper {
+    max-width: 1100px;
+    margin: auto;
+    padding: 30px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+}
+
+/* ---------- Cart List ---------- */
+.cart-box {
+    background: #fff;
+    border-radius: 14px;
+    padding: 25px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.08);
+    animation: fadeIn 0.6s ease;
+}
+
+.cart-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.cart-item {
+    display: grid;
+    grid-template-columns: 90px 1fr auto;
+    gap: 15px;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+    animation: slideUp 0.4s ease;
+}
+
+.cart-item:last-child { border-bottom: none; }
+
+.cart-item img {
+    width: 90px;
+    height: 90px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+}
+
+.cart-info h4 {
+    margin: 0;
+    font-size: 17px;
+}
+
+.cart-info p {
+    margin: 4px 0;
+    color: #666;
+}
+
+.qty-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.qty-box button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.qty-box button:hover { transform: scale(1.1); }
+
+.remove {
+    background: var(--danger);
+}
+
+.qty {
+    min-width: 28px;
+    text-align: center;
+}
+
+/* ---------- Summary ---------- */
+.summary-box {
+    background: #fff;
+    border-radius: 14px;
+    padding: 25px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.08);
+    position: sticky;
+    top: 25px;
+    height: fit-content;
+}
+
+.summary-box h3 {
+    margin-top: 0;
+    font-size: 22px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 12px 0;
+}
+
+.summary-total {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.summary-actions button {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.checkout {
+    background: var(--success);
+    color: #fff;
+}
+
+.checkout:hover { background: #157347; }
+
+.clear {
+    background: var(--gray);
+    color: #fff;
+}
+
+.clear:hover { background: #5c636a; }
+
+.back {
+    background: var(--primary);
+    color: #fff;
+}
+
+.back:hover { background: #0b5ed7; }
+
+/* ---------- Empty ---------- */
+.empty {
+    text-align: center;
+    padding: 60px;
+    color: #777;
+}
+
+/* ---------- Animations ---------- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+    .cart-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="cart-wrapper">
+
+    <div class="cart-box">
+        <div class="cart-title">🛒 Shopping Cart</div>
+        <div id="cart-items"></div>
+    </div>
+
+    <div class="summary-box">
+        <h3>Order Summary</h3>
+        <div class="summary-row">
+            <span>Total</span>
+            <span class="summary-total">LKR <span id="cart-total">0</span></span>
+        </div>
+
+        <div class="summary-actions">
+            <button class="checkout" onclick="checkout()">Checkout</button>
+            <button class="clear" onclick="clearCart()">Clear Cart</button>
+            <button class="back" onclick="goBack()">Continue Shopping</button>
+        </div>
+    </div>
+
+</div>
+
+<script src="/static/cart.js"></script>
+<!-- <script>
+function checkout() {
+    alert("Checkout integration coming next ");
+}
+</script> -->
+
+</body>
+</html>

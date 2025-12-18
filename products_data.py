@@ -229,24 +229,26 @@ payments_col = db["payments"]
 products_col.delete_many({})
 # Sample products for public store
 
-products = [{
-    "id": "prod_degree_01",
-    "name": "Bachelor of IT (SpaceXP Campus)",
-    "category": "education",
-    "subcategory": "degree_programs",
-    "price": 185000,
-    "original_price": 225000,
-    "currency": "LKR",
-    "images": ["static/store/degree_it.jpg"],
-    "description": "Complete your IT degree with flexible payment options. Government employee discount available.",
-    "features": ["3-year program", "Weekend classes", "Online support", "Governmentdiscount"],
-    "tags": ["degree", "it", "government", "career_advancement"],
-    "target_segments": ["needs_qualification", "government_employee", "mid_career_family"],
-    "in_stock": True,
-    "delivery_options": ["online", "campus"],
-    "rating": 4.5,
-    "reviews_count": 47,
-    "created": datetime.utcnow()},
+products = [
+    {
+        "id": "prod_degree_01",
+        "name": "Bachelor of IT (SpaceXP Campus)",
+        "category": "education",
+        "subcategory": "degree_programs",
+        "price": 185000,
+        "original_price": 225000,
+        "currency": "LKR",
+        "images": ["/static/store/degree_it.jpg"],
+        "description": "Complete your IT degree with flexible payment options. Government employee discount available.",
+        "features": ["3-year program", "Weekend classes", "Online support", "Governmentdiscount"],
+        "tags": ["degree", "it", "government", "career_advancement"],
+        "target_segments": ["needs_qualification", "government_employee", "mid_career_family"],
+        "in_stock": True,
+        "delivery_options": ["online", "campus"],
+        "rating": 4.5,
+        "reviews_count": 47,
+        "created": datetime.utcnow()
+    },
     {
     "id": "prod_ielts_01",
     "name": "IELTS Preparation Course",
@@ -263,14 +265,14 @@ products = [{
     "in_stock": True,
     "delivery_options": ["online", "classroom"],
     "rating": 4.7,
-    "reviews_count": 89, "created": datetime.utcnow()
-},
+    "reviews_count": 89, "created": datetime.utcnow()},
     {
     "id": "prod_japan_visa_01",
     "name": "Japan Work Visa Assistance",
     "category": "visa_services",
     "subcategory": "job_visas",
-    "price": 45000,
+    "price": 50000,
+    "original_price": 65000,
     "currency": "LKR",
     "images": ["/static/store/japan_visa.jpg"],
     "description": "Complete assistance for Japan work visa applications. IT and healthcare opportunities.",
@@ -278,7 +280,7 @@ products = [{
     "tags": ["japan", "work_visa", "overseas_jobs", "it_jobs"],
     "target_segments": ["early_career", "mid_career_family", "needs_qualification"],
     "in_stock": True,
-    "delivery_options": ["consultation"],
+    "delivery_options": ["online","consultation"],
     "rating": 4.3,
     "reviews_count": 34,
     "created": datetime.utcnow()

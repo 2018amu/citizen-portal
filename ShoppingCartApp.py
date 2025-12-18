@@ -1,5 +1,15 @@
+import uuid
 from bson import ObjectId, json_util
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    render_template,
+    session,
+    redirect,
+    url_for,
+    send_file,
+)
 from flask_cors import CORS
 from flask_session import Session
 from pymongo import MongoClient
@@ -21,6 +31,7 @@ import re
 # Optional packages
 try:
     import faiss
+
     FAISS_AVAILABLE = True
 except Exception:
     faiss = None
@@ -28,6 +39,7 @@ except Exception:
 
 try:
     from sentence_transformers import SentenceTransformer
+
     SENTENCE_TRANSFORMERS_AVAILABLE = True
 except Exception:
     SentenceTransformer = None
@@ -35,6 +47,7 @@ except Exception:
 
 try:
     import openai
+
     OPENAI_AVAILABLE = True
 except Exception:
     openai = None
@@ -49,7 +62,7 @@ EMBED_MODEL = None
 # MongoDB config (use env var in production)
 MONGO_URI = os.environ.get(
     "MONGO_URI",
-    "mongodb+srv://amushun1992_db_user:PwQge1UbU41Z3Xjs@tm-users.vxuhp3p.mongodb.net/citizen_portal?retryWrites=true&w=majority"
+    "mongodb+srv://amushun1992_db_user:PwQge1UbU41Z3Xjs@tm-users.vxuhp3p.mongodb.net/citizen_portal?retryWrites=true&w=majority",
 )
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -58,8 +71,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = os.environ.get("FLASK_SECRET", "prod-secret-key")
 app.config["SESSION_TYPE"] = "filesystem"
-app.config["SESSION_COOKIE_SECURE"] = os.environ.get(
-    "SESSION_COOKIE_SECURE", "False") == "True"
+app.config["SESSION_COOKIE_SECURE"] = (
+    os.environ.get("SESSION_COOKIE_SECURE", "False") == "True"
+)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = os.environ.get(
     "SESSION_COOKIE_SAMESITE", "Lax")
@@ -102,33 +116,38 @@ def build_dashboard_analytics(db):
 
     # ----- User metrics -----
     total_users = newusers_col.count_documents({})
-    active_users = newusers_col.count_documents({
-        "last_active": {"$gte": now - timedelta(days=30)}
-    })
-    new_users_7d = newusers_col.count_documents({
-        "created": {"$gte": now - timedelta(days=7)}
-    })
+    active_users = newusers_col.count_documents(
+        {"last_active": {"$gte": now - timedelta(days=30)}}
+    )
+    new_users_7d = newusers_col.count_documents(
+        {"created": {"$gte": now - timedelta(days=7)}}
+    )
 
     # ----- Engagement metrics -----
     total_engagements = engagements_col.count_documents({})
-    recent_engagements_7d = engagements_col.count_documents({
-        "timestamp": {"$gte": now - timedelta(days=7)}
-    })
+    recent_engagements_7d = engagements_col.count_documents(
+        {"timestamp": {"$gte": now - timedelta(days=7)}}
+    )
 
     # ----- Store metrics -----
     total_orders = orders_col.count_documents({})
-    revenue_cursor = payments_col.aggregate([
-        {"$match": {"status": "completed"}},
-        {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
-    ])
+    revenue_cursor = payments_col.aggregate(
+        [
+            {"$match": {"status": "completed"}},
+            {"$group": {"_id": None, "total": {"$sum": "$amount"}}},
+        ]
+    )
     revenue_result = list(revenue_cursor)
     total_revenue_amount = revenue_result[0]["total"] if revenue_result else 0
 
     # ----- User segmentation -----
     user_segments = {}
     for user in newusers_col.find({}):
-        segments = user.get("extended_profile", {}).get(
-            "interests", {}).get("service_preferences", [])
+        segments = (
+            user.get("extended_profile", {})
+            .get("interests", {})
+            .get("service_preferences", [])
+        )
         for segment in segments:
             user_segments[segment] = user_segments.get(segment, 0) + 1
 
@@ -143,32 +162,39 @@ def build_dashboard_analytics(db):
         "user_metrics": {
             "total_users": total_users,
             "active_users": active_users,
-            "new_users_7d": new_users_7d
+            "new_users_7d": new_users_7d,
         },
         "engagement_metrics": {
             "total_engagements": total_engagements,
-            "recent_engagements_7d": recent_engagements_7d
+            "recent_engagements_7d": recent_engagements_7d,
         },
         "store_metrics": {
             "total_orders": total_orders,
             "total_revenue": total_revenue_amount,
-            "conversion_rate": "3.2%"  # Replace with real calculation if needed
+            "conversion_rate": "3.2%",  # Replace with real calculation if needed
         },
         "user_segments": user_segments,
-        "recent_activities": recent_activities
+        "recent_activities": recent_activities,
     }
 
     # Safety defaults
     analytics.setdefault(
-        "user_metrics", {"total_users": 0, "active_users": 0, "new_users_7d": 0})
-    analytics.setdefault("engagement_metrics", {
-                         "total_engagements": 0, "recent_engagements_7d": 0})
-    analytics.setdefault("store_metrics", {
-                         "total_orders": 0, "total_revenue": 0, "conversion_rate": "0%"})
+        "user_metrics", {"total_users": 0,
+                         "active_users": 0, "new_users_7d": 0}
+    )
+    analytics.setdefault(
+        "engagement_metrics", {
+            "total_engagements": 0, "recent_engagements_7d": 0}
+    )
+    analytics.setdefault(
+        "store_metrics",
+        {"total_orders": 0, "total_revenue": 0, "conversion_rate": "0%"},
+    )
     analytics.setdefault("user_segments", {})
     analytics.setdefault("recent_activities", [])
 
     return analytics
+
 
 # -----------------------------
 # Dashboard route
@@ -177,6 +203,8 @@ def build_dashboard_analytics(db):
 def dashboard():
     analytics = build_dashboard_analytics(db)  # Pass your db object here
     return render_template("dashboard.html", analytics=analytics)
+
+
 # -----------------------------
 # Route: analytics API (optional)
 # -----------------------------
@@ -189,32 +217,34 @@ def get_dashboard_analytics():
     # -----------------------------
     total_users = newusers_col.count_documents({})
 
-    active_users = newusers_col.count_documents({
-        "last_active": {"$gte": now - timedelta(days=30)}
-    })
+    active_users = newusers_col.count_documents(
+        {"last_active": {"$gte": now - timedelta(days=30)}}
+    )
 
-    new_users_7d = newusers_col.count_documents({
-        "created": {"$gte": now - timedelta(days=7)}
-    })
+    new_users_7d = newusers_col.count_documents(
+        {"created": {"$gte": now - timedelta(days=7)}}
+    )
 
     # -----------------------------
     # ENGAGEMENT ANALYTICS
     # -----------------------------
     total_engagements = eng_col.count_documents({})
 
-    recent_engagements = eng_col.count_documents({
-        "timestamp": {"$gte": now - timedelta(days=7)}
-    })
+    recent_engagements = eng_col.count_documents(
+        {"timestamp": {"$gte": now - timedelta(days=7)}}
+    )
 
     # -----------------------------
     # STORE ANALYTICS
     # -----------------------------
     total_orders = orders_col.count_documents({})
 
-    revenue_cursor = payments_col.aggregate([
-        {"$match": {"status": "completed"}},
-        {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
-    ])
+    revenue_cursor = payments_col.aggregate(
+        [
+            {"$match": {"status": "completed"}},
+            {"$group": {"_id": None, "total": {"$sum": "$amount"}}},
+        ]
+    )
 
     revenue_result = list(revenue_cursor)
     total_revenue_amount = revenue_result[0]["total"] if revenue_result else 0
@@ -248,26 +278,29 @@ def get_dashboard_analytics():
     # -----------------------------
     # RESPONSE
     # -----------------------------
-    return jsonify({
-        "user_metrics": {
-            "total_users": total_users,
-            "active_users": active_users,
-            "new_users_7d": new_users_7d
-        },
-        "engagement_metrics": {
-            "total_engagements": total_engagements,
-            "recent_engagements": recent_engagements,
-            "avg_session_duration": "5m 23s"  # placeholder
-        },
-        "store_metrics": {
-            "total_orders": total_orders,
-            "total_revenue": total_revenue_amount,
-            "conversion_rate": "3.2%"  # placeholder
-        },
-        "user_segments": user_segments,
-        "popular_products": popular_products,
-        "recent_activities": recent_activities
-    })
+    return jsonify(
+        {
+            "user_metrics": {
+                "total_users": total_users,
+                "active_users": active_users,
+                "new_users_7d": new_users_7d,
+            },
+            "engagement_metrics": {
+                "total_engagements": total_engagements,
+                "recent_engagements": recent_engagements,
+                "avg_session_duration": "5m 23s",  # placeholder
+            },
+            "store_metrics": {
+                "total_orders": total_orders,
+                "total_revenue": total_revenue_amount,
+                "conversion_rate": "3.2%",  # placeholder
+            },
+            "user_segments": user_segments,
+            "popular_products": popular_products,
+            "recent_activities": recent_activities,
+        }
+    )
+
 
 # /api/consent/update
 @app.route("/api/consent/update", methods=["POST"])
@@ -279,19 +312,21 @@ def update_consent():
         return jsonify({"error": "user_id required"}), 400
 
     consent_updates = {
-        "extended_profile.consent.marketing_emails": payload.get("marketing_emails", False),
-
-        "extended_profile.consent.personalized_ads": payload.get("personalized_ads", False),
+        "extended_profile.consent.marketing_emails": payload.get(
+            "marketing_emails", False
+        ),
+        "extended_profile.consent.personalized_ads": payload.get(
+            "personalized_ads", False
+        ),
         "extended_profile.consent.data_analytics": payload.get("data_analytics", False),
-        "extended_profile.consent.updated": datetime.utcnow()
+        "extended_profile.consent.updated": datetime.utcnow(),
     }
 
-    newusers_col.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": consent_updates}
-    )
+    newusers_col.update_one({"_id": ObjectId(user_id)}, {
+                            "$set": consent_updates})
 
     return jsonify({"status": "ok", "message": "Consent preferences updated"})
+
 
 # /api/data/export/<user_id>
 @app.route("/api/data/export/<user_id>", methods=["GET"])
@@ -309,7 +344,7 @@ def export_user_data(user_id):
     export_data = {
         "profile": user.get("profile", {}),
         "extended_profile": user.get("extended_profile", {}),
-        "consent_preferences": user.get("extended_profile", {}).get("consent", {})
+        "consent_preferences": user.get("extended_profile", {}).get("consent", {}),
     }
 
     return jsonify(export_data), 200
@@ -332,9 +367,8 @@ def get_products():
     # CATEGORY FILTER
     # -------------------------
     if category:
-        query["category"] = {
-            "$in": [c.strip().lower() for c in category.split(",")]
-        }
+        query["category"] = {"$in": [c.strip().lower()
+                                     for c in category.split(",")]}
 
     # -------------------------
     # DELIVERY FILTER (FIXED)
@@ -359,7 +393,6 @@ def get_products():
     print("RAW PARAMS:", request.args)
     print("QUERY BEFORE DB:", query)
 
-
     cursor = products_col.find(query)
 
     # -------------------------
@@ -383,8 +416,6 @@ def get_products():
     return jsonify(products)
 
 
-
-
 # /api/store/categories
 
 
@@ -396,30 +427,76 @@ def get_store_categories():
         subcategories[cat] = products_col.distinct(
             "subcategory", {"category": cat})
 
-    return jsonify({
-        "categories": categories,
-        "subcategories": subcategories
-    })
+    return jsonify({"categories": categories, "subcategories": subcategories})
+
 
 # //api/store/order
+
+# @app.route("/api/store/order", methods=["POST"])
+# def create_order():
+#     payload = request.json or {}
+
+#     items = payload.get("items", [])
+#     total_amount = payload.get("total_amount")
+
+#     # ---- Validation ----
+#     if not items or not isinstance(items, list):
+#         return jsonify({"error": "Cart is empty"}), 400
+
+#     if not total_amount or total_amount <= 0:
+#         return jsonify({"error": "Invalid total amount"}), 400
+
+#     order = {
+#         "order_id": f"ORD-{uuid.uuid4().hex[:8].upper()}",
+#         "user_id": payload.get("user_id"),  # optional
+#         "items": items,
+#         "total_amount": total_amount,
+#         "status": "pending",
+#         "shipping_address": payload.get("shipping_address", {}),
+#         "payment_method": payload.get("payment_method", "cod"),
+#         "created": datetime.utcnow(),
+#         "updated": datetime.utcnow()
+#     }
+
+#     result = orders_col.insert_one(order)
+
+#     return jsonify({
+#         "status": "ok",
+#         "order_id": order["order_id"],
+#         "mongo_id": str(result.inserted_id)
+#     }), 201
+
+
 @app.route("/api/store/order", methods=["POST"])
 def create_order():
-    payload = request.json or {}
+    try:
+        payload = request.json
+        print("PAYLOAD RECEIVED:", payload)
 
-    order = {
-        "order_id": f"ORD{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-        "user_id": payload.get("user_id"),
-        "items": payload.get("items", []),
-        "total_amount": payload.get("total_amount", 0),
-        "status": "pending",
-        "shipping_address": payload.get("shipping_address", {}),
-        "payment_method": payload.get("payment_method"),
-        "created": datetime.utcnow(),
-        "updated": datetime.utcnow()
-    }
+        if not payload or not payload.get("items"):
+            return jsonify({"error": "Cart is empty"}), 400
 
-    result = orders_col.insert_one(order)
-    return jsonify({"status": "ok", "order_id": order["order_id"]})
+        order = {
+            "order_id": f"ORD{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            "user_id": payload.get("user_id"),
+            "items": payload.get("items", []),
+            "total_amount": payload.get("total_amount", 0),
+            "status": "pending",
+            "shipping_address": payload.get("shipping_address", {}),
+            "payment_method": payload.get("payment_method"),
+            "created": datetime.utcnow(),
+            "updated": datetime.utcnow(),
+        }
+
+        result = orders_col.insert_one(order)
+        print("ORDER INSERTED:", order)
+
+        return jsonify({"status": "ok", "order_id": order["order_id"]}), 201
+
+    except Exception as e:
+        print("ERROR CREATING ORDER:", e)
+        return jsonify({"error": str(e)}), 500
+
 
 # /api/store/payment
 @app.route("/api/store/payment", methods=["POST"])
@@ -435,25 +512,29 @@ def process_payment():
         "method": payload.get("method"),
         "status": "completed",
         "transaction_id": payload.get("transaction_id"),
-        "created": datetime.utcnow()
+        "created": datetime.utcnow(),
     }
 
     # Update order status
     orders_col.update_one(
         {"order_id": payload.get("order_id")},
-        {"$set": {"status": "paid", "updated": datetime.utcnow()}}
+        {"$set": {"status": "paid", "updated": datetime.utcnow()}},
     )
 
     payments_col.insert_one(payment)
 
     # Log engagement for recommendation system
-    eng_col.insert_one({
-        "user_id": payload.get("user_id"),
-        "type": "purchase",
-        "product_ids": [item.get("product_id") for item in payload.get("items", [])],
-        "amount": payload.get("amount", 0),
-        "timestamp": datetime.utcnow()
-    })
+    eng_col.insert_one(
+        {
+            "user_id": payload.get("user_id"),
+            "type": "purchase",
+            "product_ids": [
+                item.get("product_id") for item in payload.get("items", [])
+            ],
+            "amount": payload.get("amount", 0),
+            "timestamp": datetime.utcnow(),
+        }
+    )
     return jsonify({"status": "ok", "payment_id": payment["payment_id"]})
 
 
@@ -475,18 +556,23 @@ def get_recommendations(user_id):
     try:
         ads = recommendation_engine.get_personalized_ads(user_id)
         edu_recommendations = recommendation_engine.generate_education_recommendations(
-            user_id)
+            user_id
+        )
 
-        return jsonify({
-            "ads": ads,
-            "education_recommendations": edu_recommendations,
-            "user_segment": recommendation_engine.get_user_segment(user_id)
-        })
+        return jsonify(
+            {
+                "ads": ads,
+                "education_recommendations": edu_recommendations,
+                "user_segment": recommendation_engine.get_user_segment(user_id),
+            }
+        )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 # ---------------- Utilities ----------------
+
 
 def to_jsonable(obj):
     if isinstance(obj, ObjectId):
@@ -509,7 +595,9 @@ def admin_required(fn):
                 return jsonify({"error": "unauthorized"}), 401
             return redirect(url_for("admin_login"))
         return fn(*args, **kwargs)
+
     return wrapper
+
 
 # ---------------- Embedding model ----------------
 
@@ -519,11 +607,13 @@ def get_embedding_model():
     if EMBED_MODEL is None:
         if not SENTENCE_TRANSFORMERS_AVAILABLE:
             raise RuntimeError(
-                "sentence-transformers not available. Install with `pip install sentence-transformers`")
+                "sentence-transformers not available. Install with `pip install sentence-transformers`"
+            )
         # model_name = os.getenv(
         #     "EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
         model_name = os.getenv(
-            "EMBED_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+            "EMBED_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        )
 
         EMBED_MODEL = SentenceTransformer(model_name)
         logger.info(f"Loaded embedding model: {model_name}")
@@ -541,8 +631,8 @@ def run_ai_simple(query: str):
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Give accurate, short answers."},
-                {"role": "user", "content": query}
-            ]
+                {"role": "user", "content": query},
+            ],
         )
         return response.choices[0].message.content.strip()
 
@@ -592,22 +682,20 @@ def build_faiss_index():
                 a_text = q.get("answer", {}).get("en", "") or ""
 
                 #  MUST include answer text for proper semantic search
-                combined = " ".join([
-                    svc_name,
-                    sub_name,
-                    q_text,
-                    a_text
-                ]).strip()
+                combined = " ".join(
+                    [svc_name, sub_name, q_text, a_text]).strip()
 
                 texts.append(combined)
 
                 # Meta item
-                items.append({
-                    "service": svc_name,
-                    "subservice": sub_name,
-                    "question": q_text,
-                    "answer": a_text
-                })
+                items.append(
+                    {
+                        "service": svc_name,
+                        "subservice": sub_name,
+                        "question": q_text,
+                        "answer": a_text,
+                    }
+                )
 
     if len(texts) == 0:
         logger.info("No texts found to index.")
@@ -658,12 +746,15 @@ def load_faiss_index():
 _index, _meta = load_faiss_index()
 
 # ---------------- Routes ----------------
+
+
 @app.route("/")
 def home():
     try:
         return render_template("mainfaiss.html")
     except Exception:
         return "Citizen Portal API Running"
+
 
 # ---------------- Admin ----------------
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -702,6 +793,7 @@ def admin_logout():
     session.pop("admin_logged_in", None)
     return redirect(url_for("admin_login"))
 
+
 # Admin endpoint to rebuild index
 @app.route("/admin/rebuild_faiss", methods=["POST"])
 @admin_required
@@ -710,6 +802,7 @@ def admin_rebuild_faiss():
     global _index, _meta
     _index, _meta = load_faiss_index()
     return jsonify({"ok": ok})
+
 
 # ---------------- Profiles ----------------
 @app.route("/api/profile/step", methods=["POST"])
@@ -730,7 +823,7 @@ def api_profile_step():
             "email": step_data.get("email"),
             "phone": None,
             "job": None,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.utcnow(),
         }
         result = profiles_col.insert_one(doc)
         return jsonify({"profile_id": str(result.inserted_id)})
@@ -747,23 +840,22 @@ def api_profile_step():
     if step == "contact":
         profiles_col.update_one(
             {"_id": pid},
-            {"$set": {
-                "email": step_data.get("email"),
-                "phone": step_data.get("phone")
-            }}
+            {
+                "$set": {
+                    "email": step_data.get("email"),
+                    "phone": step_data.get("phone"),
+                }
+            },
         )
         return jsonify({"status": "ok"})
 
     if step == "employment":
         profiles_col.update_one(
-            {"_id": pid},
-            {"$set": {
-                "job": step_data.get("job")
-            }}
-        )
+            {"_id": pid}, {"$set": {"job": step_data.get("job")}})
         return jsonify({"status": "ok"})
 
     return jsonify({"error": "Unhandled case"}), 400
+
 
 # ---------------- Services / Categories / Ads / Officers ----------------
 @app.route("/api/services", methods=["GET"])
@@ -842,41 +934,42 @@ def extended_profile():
             "children": payload.get("children", []),
             "children_ages": payload.get("children_ages", []),
             "children_education": payload.get("children_education", []),
-            "dependents": payload.get("dependents", 0)
+            "dependents": payload.get("dependents", 0),
         },
         "education": {
             "highest_qualification": payload.get("highest_qualification"),
             "institution": payload.get("institution"),
             "year_graduated": payload.get("year_graduated"),
-            "field_of_study": payload.get("field_of_study")
+            "field_of_study": payload.get("field_of_study"),
         },
         "career": {
             "current_job": payload.get("current_job"),
             "years_experience": payload.get("years_experience"),
             "skills": payload.get("skills", []),
-            "career_goals": payload.get("career_goals", [])
+            "career_goals": payload.get("career_goals", []),
         },
         "interests": {
             "hobbies": payload.get("hobbies", []),
             "learning_interests": payload.get("learning_interests", []),
-            "service_preferences": payload.get("service_preferences", [])
+            "service_preferences": payload.get("service_preferences", []),
         },
         "consent": {
             "marketing_emails": payload.get("marketing_emails", False),
             "personalized_ads": payload.get("personalized_ads", False),
-            "data_analytics": payload.get("data_analytics", False)
-        }
+            "data_analytics": payload.get("data_analytics", False),
+        },
     }
 
     try:
         newusers_col.update_one(
             {"_id": user_obj_id},
-            {"$set": {"extended_profile": extended_data, "updated": datetime.utcnow()}}
+            {"$set": {"extended_profile": extended_data, "updated": datetime.utcnow()}},
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
     return jsonify({"status": "ok"})
+
 
 # add new user  (/api/profile/extended)
 @app.route("/api/profile/create", methods=["POST"])
@@ -891,30 +984,30 @@ def create_profile():
             "children": payload.get("children", []),
             "children_ages": payload.get("children_ages", []),
             "children_education": payload.get("children_education", []),
-            "dependents": payload.get("dependents", 0)
+            "dependents": payload.get("dependents", 0),
         },
         "education": {
             "highest_qualification": payload.get("highest_qualification"),
             "institution": payload.get("institution"),
             "year_graduated": payload.get("year_graduated"),
-            "field_of_study": payload.get("field_of_study")
+            "field_of_study": payload.get("field_of_study"),
         },
         "career": {
             "current_job": payload.get("current_job"),
             "years_experience": payload.get("years_experience"),
             "skills": payload.get("skills", []),
-            "career_goals": payload.get("career_goals", [])
+            "career_goals": payload.get("career_goals", []),
         },
         "interests": {
             "hobbies": payload.get("hobbies", []),
             "learning_interests": payload.get("learning_interests", []),
-            "service_preferences": payload.get("service_preferences", [])
+            "service_preferences": payload.get("service_preferences", []),
         },
         "consent": {
             "marketing_emails": payload.get("marketing_emails", False),
             "personalized_ads": payload.get("personalized_ads", False),
-            "data_analytics": payload.get("data_analytics", False)
-        }
+            "data_analytics": payload.get("data_analytics", False),
+        },
     }
 
     # If user_id exists, try to update; else create new
@@ -926,8 +1019,12 @@ def create_profile():
             if user:
                 newusers_col.update_one(
                     {"_id": user_obj_id},
-                    {"$set": {"extended_profile": extended_data,
-                              "updated": datetime.utcnow()}}
+                    {
+                        "$set": {
+                            "extended_profile": extended_data,
+                            "updated": datetime.utcnow(),
+                        }
+                    },
                 )
                 return jsonify({"status": "ok", "user_id": str(user_obj_id)})
         except Exception:
@@ -941,10 +1038,11 @@ def create_profile():
         "job": payload.get("job"),
         "extended_profile": extended_data,
         "created": datetime.utcnow(),
-        "updated": datetime.utcnow()
+        "updated": datetime.utcnow(),
     }
     result = newusers_col.insert_one(new_doc)
     return jsonify({"status": "ok", "user_id": str(result.inserted_id)})
+
 
 # Enhanced engagement logging
 
@@ -962,7 +1060,6 @@ def log_enhanced_engagement():
         doc = {
             "user_id": payload.get("user_id"),
             "session_id": payload.get("session_id"),
-
             "age": int(payload.get("age")) if payload.get("age") else None,
             "job": payload.get("job"),
             "desires": payload.get("desires", []),
@@ -970,29 +1067,25 @@ def log_enhanced_engagement():
             "service": payload.get("service"),
             "ad": payload.get("ad"),
             "source": payload.get("source"),
-
             # User behavior tracking
             "time_spent": payload.get("time_spent"),
             "scroll_depth": payload.get("scroll_depth"),
             "clicks": payload.get("clicks", []),
             "searches": payload.get("searches", []),
-
             # Device info
             "device_info": {
                 "user_agent": user_agent,
                 "ip_address": ip_address,
-                "screen_resolution": payload.get("screen_resolution")
+                "screen_resolution": payload.get("screen_resolution"),
             },
-
             # Referral tracking
             "referral_data": {
                 "referrer": referrer,
                 "utm_source": payload.get("utm_source"),
                 "utm_medium": payload.get("utm_medium"),
-                "utm_campaign": payload.get("utm_campaign")
+                "utm_campaign": payload.get("utm_campaign"),
             },
-
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.utcnow(),
         }
 
         eng_col.insert_one(doc)
@@ -1002,6 +1095,7 @@ def log_enhanced_engagement():
 
     return jsonify({"status": "ok"})
 
+
 # ---------------- Engagement CSV ----------------
 @app.route("/api/admin/export_engagement_csv", methods=["GET"])
 @admin_required
@@ -1010,28 +1104,44 @@ def export_engagement_csv():
         cursor = eng_col.find()
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["user_id", "age", "job", "desires", "question_clicked",
-                         "service", "ad", "source", "timestamp"])
+        writer.writerow(
+            [
+                "user_id",
+                "age",
+                "job",
+                "desires",
+                "question_clicked",
+                "service",
+                "ad",
+                "source",
+                "timestamp",
+            ]
+        )
         for e in cursor:
-            writer.writerow([
-                e.get("user_id"),
-                e.get("age"),
-                e.get("job"),
-                ",".join(e.get("desires") or []),
-                e.get("question_clicked"),
-                e.get("service"),
-                e.get("ad"),
-                e.get("source"),
-                e.get("timestamp")
-            ])
+            writer.writerow(
+                [
+                    e.get("user_id"),
+                    e.get("age"),
+                    e.get("job"),
+                    ",".join(e.get("desires") or []),
+                    e.get("question_clicked"),
+                    e.get("service"),
+                    e.get("ad"),
+                    e.get("source"),
+                    e.get("timestamp"),
+                ]
+            )
         output.seek(0)
-        return send_file(io.BytesIO(output.getvalue().encode("utf-8")),
-                         mimetype="text/csv",
-                         as_attachment=True,
-                         download_name="engagements.csv")
+        return send_file(
+            io.BytesIO(output.getvalue().encode("utf-8")),
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name="engagements.csv",
+        )
     except Exception as e:
         logger.exception("CSV export failed: %s", e)
         return jsonify({"error": str(e)}), 500
+
 
 # ---------------- FAISS-only endpoint ----------------
 
@@ -1138,11 +1248,7 @@ def api_ai_search():
                 item = meta[i].copy()
                 item["score"] = float(distances[0][0])
                 item["source"] = "faiss"
-                return jsonify({
-                    "source": "faiss",
-                    "query": query,
-                    "result": item
-                }), 200
+                return jsonify({"source": "faiss", "query": query, "result": item}), 200
     except Exception as e:
         app.logger.exception("FAISS error: %s", e)
 
@@ -1150,16 +1256,11 @@ def api_ai_search():
     try:
         q_regex = {"$regex": query, "$options": "i"}
         svc = services_col.find_one(
-            {"$or": [{"name.en": q_regex}, {"description": q_regex}]},
-            {"_id": 0}
+            {"$or": [{"name.en": q_regex}, {"description": q_regex}]}, {"_id": 0}
         )
         if svc:
             svc["source"] = "db"
-            return jsonify({
-                "source": "db",
-                "query": query,
-                "result": svc
-            }), 200
+            return jsonify({"source": "db", "query": query, "result": svc}), 200
     except Exception as e:
         app.logger.exception("DB search error: %s", e)
 
@@ -1178,26 +1279,33 @@ def api_ai_search():
 
         ai_answer = run_ai_simple(query, context_docs=context_docs)
         if ai_answer:
-            return jsonify({
-                "source": "ai",
-                "query": query,
-                "result": {
-                    "answer": ai_answer,
-                    "source": "ai"
-                }
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "source": "ai",
+                        "query": query,
+                        "result": {"answer": ai_answer, "source": "ai"},
+                    }
+                ),
+                200,
+            )
     except Exception as e:
         app.logger.exception("AI fallback error: %s", e)
 
     # 4 NOTHING FOUND
-    return jsonify({
-        "source": "none",
-        "query": query,
-        "result": {
-            "answer": "No relevant information found.",
-            "source": "hybrid"
-        }
-    }), 200
+    return (
+        jsonify(
+            {
+                "source": "none",
+                "query": query,
+                "result": {
+                    "answer": "No relevant information found.",
+                    "source": "hybrid",
+                },
+            }
+        ),
+        200,
+    )
 
 
 @app.route("/api/ai/ai_only_search", methods=["POST"])
@@ -1233,34 +1341,47 @@ def ai_only_search():
     try:
         ai_answer = ask_ai_with_context_single(query, context_docs)
         if ai_answer:
-            return jsonify({
-                "source": "ai",
-                "query": query,
-                "results": [{
-                    "answer": ai_answer,
-                    "source": "ai"
-                }]
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "source": "ai",
+                        "query": query,
+                        "results": [{"answer": ai_answer, "source": "ai"}],
+                    }
+                ),
+                200,
+            )
     except Exception as e:
         app.logger.exception("AI error: %s", e)
-        return jsonify({
-            "source": "ai",
-            "query": query,
-            "results": [{
-                "answer": "AI service unavailable.",
-                "source": "ai"
-            }]
-        }), 200
+        return (
+            jsonify(
+                {
+                    "source": "ai",
+                    "query": query,
+                    "results": [{"answer": "AI service unavailable.", "source": "ai"}],
+                }
+            ),
+            200,
+        )
 
     # ----------------- NOTHING FOUND -----------------
-    return jsonify({
-        "source": "ai",
-        "query": query,
-        "results": [{
-            "answer": "No relevant information found.",
-            "source": "ai"
-        }]
-    }), 200
+    return (
+        jsonify(
+            {
+                "source": "ai",
+                "query": query,
+                "results": [
+                    {"answer": "No relevant information found.", "source": "ai"}
+                ],
+            }
+        ),
+        200,
+    )
+
+
+@app.route("/store/cart")
+def cart_page():
+    return render_template("cart.html")
 
 
 @app.route("/api/engagement", methods=["GET"])
