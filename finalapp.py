@@ -318,36 +318,35 @@ def export_user_data(user_id):
 # /api/store/products
 @app.route("/api/store/products")
 def get_products():
-    category = request.args.get("category")      # e.g., "fashion,clothing"
-    delivery = request.args.get("delivery")      # e.g., "pickup,delivery"
-    tags = request.args.get("tags", "")          # e.g., "new,sale"
-    min_price = request.args.get("min_price", type=float)
-    max_price = request.args.get("max_price", type=float)
+    from bson import ObjectId
 
-    query = {"in_stock": True}
+    category = request.args.get("category")
+    delivery = request.args.get("delivery")
+    min_price = request.args.get("min_price", type=int)
+    max_price = request.args.get("max_price", type=int)
+    sort = request.args.get("sort", "name")
 
-    # --- Categories (case-insensitive)
+    query = {}
+
+    # -------------------------
+    # CATEGORY FILTER
+    # -------------------------
     if category:
-        categories = [c.strip() for c in category.split(",") if c.strip()]
-        if categories:
-            query["category"] = {
-                "$in": [re.compile(f"^{c}$", re.IGNORECASE) for c in categories]}
+        query["category"] = {
+            "$in": [c.strip().lower() for c in category.split(",")]
+        }
 
-    # --- Delivery (case-insensitive)
+    # -------------------------
+    # DELIVERY FILTER (FIXED)
+    # -------------------------
     if delivery:
-        deliveries = [d.strip() for d in delivery.split(",") if d.strip()]
-        if deliveries:
-            query["delivery"] = {
-                "$in": [re.compile(f"^{d}$", re.IGNORECASE) for d in deliveries]}
+        query["delivery_options"] = {
+            "$in": [d.strip().lower() for d in delivery.split(",")]
+        }
 
-    # --- Tags (case-insensitive)
-    if tags:
-        tags_list = [t.strip() for t in tags.split(",") if t.strip()]
-        if tags_list:
-            query["tags"] = {
-                "$in": [re.compile(f"^{t}$", re.IGNORECASE) for t in tags_list]}
-
-    # --- Price filter
+    # -------------------------
+    # PRICE FILTER
+    # -------------------------
     if min_price is not None or max_price is not None:
         query["price"] = {}
         if min_price is not None:
@@ -355,18 +354,36 @@ def get_products():
         if max_price is not None:
             query["price"]["$lte"] = max_price
 
-    # Fetch products from MongoDB
-    products = list(products_col.find(
-        query,
-        {"_id": 1, "name": 1, "price": 1, "original_price": 1,
-            "images": 1, "category": 1, "delivery": 1}
-    ).limit(50))
+    # 🔍 DEBUG (VERY IMPORTANT)
+    print("FINAL QUERY:", query)
+    print("RAW PARAMS:", request.args)
+    print("QUERY BEFORE DB:", query)
 
-    # Convert _id to string
+
+    cursor = products_col.find(query)
+
+    # -------------------------
+    # SORTING
+    # -------------------------
+    if sort == "featured":
+        cursor = cursor.sort("featured", -1)
+    elif sort == "price_low":
+        cursor = cursor.sort("price", 1)
+    elif sort == "price_high":
+        cursor = cursor.sort("price", -1)
+    else:
+        cursor = cursor.sort("name", 1)
+
+    products = list(cursor)
+
+    # Convert ObjectId
     for p in products:
         p["_id"] = str(p["_id"])
 
     return jsonify(products)
+
+
+
 
 # /api/store/categories
 

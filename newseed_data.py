@@ -308,7 +308,7 @@ products = [{
     "name": "Handloom Batik Saree Collection",
     "category": "fashion",
     "subcategory": "traditional_wear",
-    "price": 4500,
+    "price": 5000,
     "original_price": 6500,
     "currency": "LKR",
     "images": ["/static/store/batik_saree.jpg"],
