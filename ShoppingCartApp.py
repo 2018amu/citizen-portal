@@ -98,8 +98,8 @@ eng_col = db["engagements"]
 profiles_col = db["profiles"]
 newusers_col = db["webusers"]
 products_col = db["products"]
-orders_col = ["orders"]
-payments_col = ["payments"]
+orders_col = db["orders"]
+payments_col = db["payments"]
 
 
 # -----------------------------
@@ -490,8 +490,13 @@ def create_order():
 
         result = orders_col.insert_one(order)
         print("ORDER INSERTED:", order)
+        print(type(orders_col))
 
-        return jsonify({"status": "ok", "order_id": order["order_id"]}), 201
+        # return jsonify({"status": "ok", "order_id": order["order_id"]}), 201
+        return jsonify({
+            "success": True,
+            "order_id": order["order_id"]
+        }), 201
 
     except Exception as e:
         print("ERROR CREATING ORDER:", e)
@@ -549,6 +554,14 @@ def recommendations_page():
 @app.route("/store")
 def store():
     return render_template("store.html")
+
+
+# @app.route("/payment")
+# def payment_page():
+#     return render_template("payment.html")
+
+
+
 
 
 @app.route("/api/recommendations/<user_id>")
@@ -1382,6 +1395,19 @@ def ai_only_search():
 @app.route("/store/cart")
 def cart_page():
     return render_template("cart.html")
+
+
+@app.route("/store/cart/payment")
+def cart_payment_page():  # ✅ unique function name
+    return render_template("payment.html")
+
+
+@app.route("/payment-success")
+def payment_success_page():  # ✅ unique function name
+    return render_template("payment_success.html")
+
+
+
 
 
 @app.route("/api/engagement", methods=["GET"])
