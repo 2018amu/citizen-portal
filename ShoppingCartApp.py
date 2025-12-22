@@ -99,13 +99,8 @@ eng_col = db["engagements"]
 profiles_col = db["profiles"]
 newusers_col = db["webusers"]
 products_col = db["products"]
-<<<<<<< HEAD
-orders_collection = ["orders"]
-payments_col = ["payments"]
-=======
 orders_col = db["orders"]
 payments_col = db["payments"]
->>>>>>> 92fba87385a28c3abb77ce1bc77e56c14399879e
 
 
 # -----------------------------
