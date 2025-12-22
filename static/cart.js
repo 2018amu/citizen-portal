@@ -1,5 +1,11 @@
+// -----------------------------
+// Load cart from localStorage
+// -----------------------------
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
+// -----------------------------
+// Render Cart
+// -----------------------------
 function renderCart() {
     const container = document.getElementById("cart-items");
     const totalEl = document.getElementById("cart-total");
@@ -19,7 +25,6 @@ function renderCart() {
 
     container.innerHTML = cart.map((item, index) => {
         total += item.price * item.quantity;
-
         return `
         <div class="cart-item">
             <img src="${item.image}">
@@ -40,14 +45,14 @@ function renderCart() {
     totalEl.textContent = total.toLocaleString();
 }
 
+// -----------------------------
+// Cart operations
+// -----------------------------
 function changeQty(index, change) {
     cart[index].quantity += change;
     if (cart[index].quantity <= 0) cart.splice(index, 1);
     saveCart();
 }
-
-
-
 
 function removeItem(index) {
     cart.splice(index, 1);
@@ -67,13 +72,16 @@ function saveCart() {
 function goBack() {
     window.location.href = "/store";
 }
+
+// -----------------------------
+// Checkout
+// -----------------------------
 async function checkout() {
     if (!cart.length) {
         alert("Your cart is empty");
         return;
     }
 
-    // 1️⃣ Prepare order payload
     const orderData = {
         items: cart.map(item => ({
             product_id: item._id,
@@ -81,38 +89,42 @@ async function checkout() {
             price: item.price,
             quantity: item.quantity
         })),
-        total_amount: cart.reduce(
-            (sum, i) => sum + i.price * i.quantity, 0
-        ),
+        total_amount: cart.reduce((sum, i) => sum + i.price * i.quantity, 0),
         payment_method: "cod"
     };
 
     try {
-        // 2️⃣ SEND order to backend HERE ⬇⬇⬇
         const response = await fetch("/api/store/order", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(orderData)
         });
 
         const data = await response.json();
 
-        // 3️⃣ Handle backend response
-        if (!response.ok) {
+        if (!response.ok || !data.success) {
             alert(data.error || "Order failed");
             return;
         }
 
-        // 4️⃣ Success → clear cart
-        localStorage.removeItem("cart");
+        // Clear cart locally
         cart = [];
+        localStorage.removeItem("cart");
 
-        alert("Order placed successfully 🎉\nOrder ID: " + data.order_id);
+        // ✅ Show Order Submitted page
+        const container = document.getElementById("cart-container"); // wrap cart page content in div#cart-container
+        container.innerHTML = `
+            <div class="order-submitted">
+                <h2>Order Submitted Successfully 🎉</h2>
+                <p>Order ID: ${data.order_id}</p>
+                <button id="goPaymentBtn">Go to Payment</button>
+            </div>
+        `;
 
-        // 5️⃣ Redirect
-        window.location.href = "/store";
+        // Add click listener to redirect to payment page
+        document.getElementById("goPaymentBtn").addEventListener("click", () => {
+            window.location.href = "/store/cart/payment";
+        });
 
     } catch (err) {
         console.error("Checkout error:", err);
@@ -121,4 +133,17 @@ async function checkout() {
 }
 
 
-document.addEventListener("DOMContentLoaded", renderCart);
+// -----------------------------
+// Initialize cart page
+// -----------------------------
+document.addEventListener("DOMContentLoaded", () => {
+    renderCart();
+
+    const btn = document.getElementById("checkoutBtn");
+    if (btn) {
+        btn.addEventListener("click", e => {
+            e.preventDefault();
+            checkout();
+        });
+    }
+});
