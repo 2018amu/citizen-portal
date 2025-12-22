@@ -10,6 +10,7 @@ from flask import (
     url_for,
     send_file,
 )
+from functools import wraps
 from flask_cors import CORS
 from flask_session import Session
 from pymongo import MongoClient
@@ -98,8 +99,13 @@ eng_col = db["engagements"]
 profiles_col = db["profiles"]
 newusers_col = db["webusers"]
 products_col = db["products"]
+<<<<<<< HEAD
 orders_collection = ["orders"]
 payments_col = ["payments"]
+=======
+orders_col = db["orders"]
+payments_col = db["payments"]
+>>>>>>> 92fba87385a28c3abb77ce1bc77e56c14399879e
 
 
 # -----------------------------
@@ -203,6 +209,8 @@ def build_dashboard_analytics(db):
 def dashboard():
     analytics = build_dashboard_analytics(db)  # Pass your db object here
     return render_template("dashboard.html", analytics=analytics)
+
+
 
 
 # -----------------------------
@@ -494,8 +502,54 @@ def create_order():
 #         "updated": datetime.utcnow()
 #     }
 
+<<<<<<< HEAD
 #     result = orders_col.insert_one(order)  # ✅ works now
 #     return jsonify({"status": "ok", "order_id": order["order_id"]}), 201
+=======
+#     result = orders_col.insert_one(order)
+
+#     return jsonify({
+#         "status": "ok",
+#         "order_id": order["order_id"],
+#         "mongo_id": str(result.inserted_id)
+#     }), 201
+
+
+@app.route("/api/store/order", methods=["POST"])
+def create_order():
+    try:
+        payload = request.json
+        print("PAYLOAD RECEIVED:", payload)
+
+        if not payload or not payload.get("items"):
+            return jsonify({"error": "Cart is empty"}), 400
+
+        order = {
+            "order_id": f"ORD{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            "user_id": payload.get("user_id"),
+            "items": payload.get("items", []),
+            "total_amount": payload.get("total_amount", 0),
+            "status": "pending",
+            "shipping_address": payload.get("shipping_address", {}),
+            "payment_method": payload.get("payment_method"),
+            "created": datetime.utcnow(),
+            "updated": datetime.utcnow(),
+        }
+
+        result = orders_col.insert_one(order)
+        print("ORDER INSERTED:", order)
+        print(type(orders_col))
+
+        # return jsonify({"status": "ok", "order_id": order["order_id"]}), 201
+        return jsonify({
+            "success": True,
+            "order_id": order["order_id"]
+        }), 200
+
+    except Exception as e:
+        print("ERROR CREATING ORDER:", e)
+        return jsonify({"error": str(e)}), 500
+>>>>>>> 92fba87385a28c3abb77ce1bc77e56c14399879e
 
 
 # /api/store/payment
@@ -551,6 +605,16 @@ def store():
     return render_template("store.html")
 
 
+
+
+# @app.route("/payment")
+# def payment_page():
+#     return render_template("payment.html")
+
+
+
+
+
 @app.route("/api/recommendations/<user_id>")
 def get_recommendations(user_id):
     try:
@@ -596,6 +660,14 @@ def admin_required(fn):
             return redirect(url_for("admin_login"))
         return fn(*args, **kwargs)
 
+    return wrapper
+
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if "profile_id" not in session:
+            return redirect("/store")
+        return f(*args, **kwargs)
     return wrapper
 
 
@@ -1201,6 +1273,26 @@ def api_ai_rebuild():
         print("INDEX ERROR:", e)
         return jsonify({"error": str(e)}), 500
 
+@app.before_request
+def auth_guard():
+    # List of paths allowed without login/session
+    allowed_paths = [
+        "/store",
+        "/store/cart",
+        "/store/cart/payment",  # ✅ Important
+        "/api/store/order",
+        "/static/"
+    ]
+
+    # Check if current path starts with any allowed path
+    if any(request.path.startswith(p) for p in allowed_paths):
+        return  # allow access
+
+    # Protect other routes
+    if "profile_id" not in session:
+        return redirect("/store")
+
+
     # /api/engagement
 
 
@@ -1379,9 +1471,23 @@ def ai_only_search():
     )
 
 
+
+
+
 @app.route("/store/cart")
 def cart_page():
     return render_template("cart.html")
+
+
+@app.route("/store/cart/payment")
+def cart_payment_page():  # ✅ unique function name
+    return render_template("payment.html")
+
+
+@app.route("/payment-success")
+def payment_success_page():  # ✅ unique function name
+    return render_template("payment_success.html")
+
 
 
 @app.route("/api/engagement", methods=["GET"])

@@ -244,3 +244,19 @@ body {
         display: none;
     }
 }
+.payment-container, .success-box {
+    max-width: 400px;
+    margin: 80px auto;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+button {
+    padding: 10px 20px;
+    background: #28a745;
+    border: none;
+    color: white;
+    cursor: pointer;
+}

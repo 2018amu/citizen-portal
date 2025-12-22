@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Your Cart</title>
+<title>Shopping Cart</title>
 
 <style>
 :root {
@@ -168,6 +168,23 @@ body {
     color: #777;
 }
 
+.order-submitted {
+    text-align: center;
+    padding: 50px;
+}
+
+.order-submitted h2 {
+    color: green;
+    margin-bottom: 20px;
+}
+
+.order-submitted button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+
 /* ---------- Animations ---------- */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
@@ -205,7 +222,16 @@ body {
         </div>
 
         <div class="summary-actions">
-            <button class="checkout" onclick="checkout()">Checkout</button>
+            
+            <!-- <button type="button" class="checkout" onclick="checkout()">Checkout</button> -->
+            <!-- <button type="button" class="checkout" id="checkoutBtn" onclick="checkout()">Checkout</button> -->
+            <div id="cart-container">
+                <div id="cart-items"></div>
+                <div id="cart-total"></div>
+                <button id="checkoutBtn">Checkout</button>
+            </div>
+            
+
             <button class="clear" onclick="clearCart()">Clear Cart</button>
             <button class="back" onclick="goBack()">Continue Shopping</button>
         </div>

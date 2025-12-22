@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment</title>
+    <link rel="stylesheet" href="/static/store.css">
+</head>
+<body>
+
+<div class="payment-container">
+    <h2>Confirm Payment</h2>
+
+    <p><strong>Order ID:</strong> <span id="order-id"></span></p>
+    <p><strong>Total Amount:</strong> LKR <span id="total-amount"></span></p>
+
+    <h3>Select Payment Method</h3>
+
+    <label>
+        <input type="radio" name="payment" value="cod" checked>
+        Cash on Delivery
+    </label><br>
+
+    <label>
+        <input type="radio" name="payment" value="card" disabled>
+        Card
+    </label>
+
+    <br><br>
+
+    <button onclick="confirmPayment()">Confirm Payment</button>
+</div>
+
+<script src="/static/payment.js"></script>
+</body>
+</html>

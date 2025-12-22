@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Success</title>
+    <link rel="stylesheet" href="/static/store.css">
+</head>
+<body>
+
+<div class="success-box">
+    <h2>🎉 Payment Successful!</h2>
+    <p>Your order has been confirmed.</p>
+    <p><strong>Order ID:</strong> <span id="order-id"></span></p>
+
+    <button onclick="goToStore()">Back to Store</button>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const orderId = sessionStorage.getItem("orderId");
+    document.getElementById("order-id").textContent = orderId || "N/A";
+
+    sessionStorage.removeItem("paymentSuccess");
+});
+// function goToStore() {
+//     window.location.href = "/store";
+// }
+</script>
+
+</body>
+</html>
