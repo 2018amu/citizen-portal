@@ -9,6 +9,7 @@
     <div class="container">
       <!-- LEFT SIDEBAR -->
       <aside class="sidebar">
+        <li><a href="/dashboard">Enhanced Dashboard</a></li>
         <h2>Categories</h2>
         <div id="category-list"></div>
 
@@ -17,31 +18,35 @@
           <button onclick="setLang('si')">සිංහල</button>
           <button onclick="setLang('ta')">தமிழ்</button>
         </div>
+        
 
         <div class="ads" id="ads-area">Ad Space</div>
       </aside>
 
       <!-- CENTER CONTENT -->
       <section class="middle">
+        <button class="nav-btn" onclick="window.location.href='/recommendations'">
+          Recommendations
+        </button>
+        
+        <button class="nav-btn" onclick="window.location.href='/store'">
+          Advertisements
+        </button>
         <h2 id="sub-title">Select Subservice</h2>
         <ul id="sub-list"></ul>
 
-        <div class="search-row">
+        <!-- <div class="search-row">
           <input id="search-input" placeholder="Search services or ask..." />
           <button onclick="openChat()">Ask AI</button>
-        </div>
+        </div> -->
 
         <h3 id="q-title">Please Select Question</h3>
         <ul id="question-list"></ul>
         <div id="answer-box"></div>
 
-        <button onclick="window.location.href='/recommendations'">
-          Show recommendations
-        </button>
-        <button onclick="window.location.href='/store'">
-          Show Public Store
-        </button>
-        <li><a href="/dashboard">Enhanced Dashboard</a></li>
+        
+        
+       
 
 
         <!-- Profile Modal -->
@@ -80,7 +85,7 @@
               id="chat-text"
               placeholder="Type your question..."
             />
-            <button onclick="sendChat()">Send</button>
+            <button onclick="sendChat()">ASK AI</button>
           </div>
           <div id="chat-result"></div>
         </div>
