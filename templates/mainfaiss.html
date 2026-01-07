@@ -9,7 +9,7 @@
     <div class="container">
       <!-- LEFT SIDEBAR -->
       <aside class="sidebar">
-        <li><a href="/dashboard">Enhanced Dashboard</a></li>
+        
         <h2>Categories</h2>
         <div id="category-list"></div>
 
@@ -20,7 +20,8 @@
         </div>
         
 
-        <div class="ads" id="ads-area">Ad Space</div>
+        <!-- <div class="ads" id="ads-area">Ad Space</div> -->
+        <li><a href="/dashboard">Enhanced Dashboard</a></li>
       </aside>
 
       <!-- CENTER CONTENT -->
@@ -32,13 +33,14 @@
         <button class="nav-btn" onclick="window.location.href='/store'">
           Advertisements
         </button>
+       
         <h2 id="sub-title">Select Subservice</h2>
         <ul id="sub-list"></ul>
 
-        <!-- <div class="search-row">
+        <div class="search-row">
           <input id="search-input" placeholder="Search services or ask..." />
           <button onclick="openChat()">Ask AI</button>
-        </div> -->
+        </div>
 
         <h3 id="q-title">Please Select Question</h3>
         <ul id="question-list"></ul>
@@ -85,7 +87,7 @@
               id="chat-text"
               placeholder="Type your question..."
             />
-            <button onclick="sendChat()">ASK AI</button>
+            <button onclick="sendChat()">Send</button>
           </div>
           <div id="chat-result"></div>
         </div>
