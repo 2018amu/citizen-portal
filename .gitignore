@@ -32,3 +32,4 @@ build/
 
 # Chroma vectorstore / cache
 vectorstore/
+.vercel
