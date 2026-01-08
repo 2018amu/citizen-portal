@@ -1,7 +1,1 @@
-from flask import Flask
-
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Citizen Portal API running"
+from ShoppingCartApp import app
