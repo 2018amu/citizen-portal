@@ -197,6 +197,8 @@ def build_dashboard_analytics(db):
     return analytics
 
 
+
+
 # -----------------------------
 # Dashboard route
 # -----------------------------
@@ -814,12 +816,16 @@ _index, _meta = load_faiss_index()
 # ---------------- Routes ----------------
 
 
+# @app.route("/")
+# def home():
+#     try:
+#         return render_template("mainfaiss.html")
+#     except Exception:
+#         return "Citizen Portal API Running"
+
 @app.route("/")
 def home():
-    try:
-        return render_template("mainfaiss.html")
-    except Exception:
-        return "Citizen Portal API Running"
+    return "Citizen Portal API running"
 
 
 # ---------------- Admin ----------------
@@ -1505,20 +1511,20 @@ def create_default_admin():
     logger.info("Default admin created: username='admin' (or already exists)")
 
 
-if __name__ == "__main__":
-    # create default admin if missing
-    create_default_admin()
+# if __name__ == "__main__":
+#     # create default admin if missing
+#     create_default_admin()
 
-    # build index if FAISS is available and index missing (optional)
-    if FAISS_AVAILABLE and (not INDEX_PATH.exists() or not META_PATH.exists()):
-        built = build_faiss_index()
-        if built:
-            logger.info("Built FAISS index on startup.")
+#     # build index if FAISS is available and index missing (optional)
+#     if FAISS_AVAILABLE and (not INDEX_PATH.exists() or not META_PATH.exists()):
+#         built = build_faiss_index()
+#         if built:
+#             logger.info("Built FAISS index on startup.")
 
-    # show registered routes — quick sanity check to avoid 404 confusion
-    for rule in app.url_map.iter_rules():
-        logger.info("Route -> %s : %s", rule.rule,
-                    ",".join(sorted(rule.methods)))
+#     # show registered routes — quick sanity check to avoid 404 confusion
+#     for rule in app.url_map.iter_rules():
+#         logger.info("Route -> %s : %s", rule.rule,
+#                     ",".join(sorted(rule.methods)))
 
-    # start server
-    app.run(debug=True, host="127.0.0.1", port=int(os.getenv("PORT", "5000")))
+#     # start server
+#     app.run(debug=True, host="127.0.0.1", port=int(os.getenv("PORT", "5000")))
