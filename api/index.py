@@ -1,1 +1,1 @@
-from ShoppingCartApp import app
+from ShoppingCart import app
